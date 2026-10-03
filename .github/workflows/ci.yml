@@ -1,4 +1,4 @@
-name: Node.js CI pipeline
+name: Node.js CI/CD pipeline
 
 on:
   push:
@@ -21,3 +21,20 @@ jobs:
 
       - name: Run Tests
         run: npm test
+
+  deploy-job:
+    needs: test-job
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/node-ec2-cicd-poc
+            git pull origin main
+            npm install
+            pm2 restart poccicd-app || pm2 start index.js --name "poccicd-app"

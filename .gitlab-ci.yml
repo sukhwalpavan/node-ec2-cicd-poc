@@ -1,0 +1,34 @@
+stages:
+  - test
+  - deploy
+
+test-job:
+  stage: test
+  image: node:20
+  script:
+    - npm install
+    - npm test
+  only:
+    - main
+
+deploy-job:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    # SSH aur Git tools install karna
+    - apk add --no-cache openssh-client git
+    - eval $(ssh-agent -s)
+    
+    # Private Key ko securely add karna
+    - echo "$EC2_SSH_KEY" | tr -d '\r' | ssh-add -
+    
+    # StrictHostKeyChecking bypass ke liye EC2 host ko known_hosts me add karna
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $EC2_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    # EC2 me login karke code pull & PM2 restart karna
+    - ssh $EC2_USER@$EC2_HOST "cd ~/node-ec2-cicd-poc && git pull origin main && npm install && pm2 restart poccicd-app || pm2 start index.js --name 'poccicd-app'"
+  only:
+    - main
