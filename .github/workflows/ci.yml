@@ -36,18 +36,27 @@ jobs:
           CLEAN_HOST=$(echo "${{ secrets.EC2_HOST }}" | tr -d '\n\r ')
           
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${CLEAN_HOST} << 'EOF'
+            # 1. Install Node.js if it doesn't exist
+            if ! command -v npm &> /dev/null; then
+              curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+          
+            # 2. Clone repo if it doesn't exist
             if [ ! -d "/home/ubuntu/node-ec2-cicd-poc" ]; then
               git clone https://github.com/sukhwalpavan/node-ec2-cicd-poc.git /home/ubuntu/node-ec2-cicd-poc
             fi
             
+            # 3. Pull latest code
             cd /home/ubuntu/node-ec2-cicd-poc
             git pull origin main
             npm install
             
-            # Ensure pm2 is installed
+            # 4. Ensure pm2 is installed
             if ! command -v pm2 &> /dev/null; then
               sudo npm install -g pm2
             fi
             
+            # 5. Restart or start app
             pm2 restart poccicd-app || pm2 start index.js --name "poccicd-app"
           EOF
