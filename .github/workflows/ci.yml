@@ -32,4 +32,22 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "cd ~/node-ec2-cicd-poc && git pull origin main && npm install && pm2 restart poccicd-app || pm2 start index.js --name 'poccicd-app'"
+          # Remove hidden enter/spaces from EC2_HOST
+          CLEAN_HOST=$(echo "${{ secrets.EC2_HOST }}" | tr -d '\n\r ')
+          
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${CLEAN_HOST} << 'EOF'
+            if [ ! -d "/home/ubuntu/node-ec2-cicd-poc" ]; then
+              git clone https://github.com/sukhwalpavan/node-ec2-cicd-poc.git /home/ubuntu/node-ec2-cicd-poc
+            fi
+            
+            cd /home/ubuntu/node-ec2-cicd-poc
+            git pull origin main
+            npm install
+            
+            # Ensure pm2 is installed
+            if ! command -v pm2 &> /dev/null; then
+              sudo npm install -g pm2
+            fi
+            
+            pm2 restart poccicd-app || pm2 start index.js --name "poccicd-app"
+          EOF
