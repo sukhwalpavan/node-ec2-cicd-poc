@@ -6,7 +6,7 @@ const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.json({
         success: true,
-        message: 'Hello! Node.js backend is running successfully.',
+        message: 'Hello from GitLab CI/CD! Auto-deployed successfully! 🚀',
         deployedAt: new Date().toISOString()
     });
 });
