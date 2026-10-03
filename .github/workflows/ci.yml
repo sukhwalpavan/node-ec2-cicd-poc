@@ -32,5 +32,4 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-          ssh ubuntu@${{ secrets.EC2_HOST }} "cd ~/node-ec2-cicd-poc && git pull origin main && npm install && pm2 restart poccicd-app || pm2 start index.js --name 'poccicd-app'"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} "cd ~/node-ec2-cicd-poc && git pull origin main && npm install && pm2 restart poccicd-app || pm2 start index.js --name 'poccicd-app'"
